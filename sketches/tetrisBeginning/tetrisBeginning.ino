@@ -15,6 +15,8 @@ const int PINSWITCH = 44;
 const int MAXHEIGHT = 17;
 const int MAXWIDTH = 10;
 const int MAXPIECESIZE = 4;
+const int SQUARESIZE = 18;
+const int COORDINATES = 2;
 int tglState, lastTglState, gameTable[MAXHEIGHT][MAXWIDTH];
 
 void setup()
@@ -22,7 +24,7 @@ void setup()
   Serial.begin(9600);
   Serial.println("Start...");
 
-  lastTglState = 0;
+  lastTglState = 1;
 
   //pinMode(buttonsPin, INPUT_PULLUP);
   pinMode(PINSWITCH, INPUT);
@@ -53,8 +55,9 @@ void loop()
 
   if (tglState != lastTglState)
   {
-    if (tglState == HIGH)
+    if (tglState == LOW)
     {
+      //Initilisation du tableau de jeu à 0 avec deux boucles for car le tableau est multidimensionnel;
       for (int h = 0; h <= MAXHEIGHT; h++)
       {
         for (int g = 0; g <= MAXWIDTH; g++)
@@ -78,13 +81,13 @@ void loop()
                                            0, 0, 0, 0,
                                            0, 0, 0, 0
                                           };
-      int j[MAXPIECESIZE][MAXPIECESIZE] = {1, 0, 0, 0,
-                                           1, 1, 1, 0,
-                                           0, 0, 0, 0,
+      int j[MAXPIECESIZE][MAXPIECESIZE] = {1, 1, 0, 0,
+                                           1, 0, 0, 0,
+                                           1, 0, 0, 0,
                                            0, 0, 0, 0
                                           };
-      int l[MAXPIECESIZE][MAXPIECESIZE] = {0, 0, 1, 0,
-                                           1, 1, 1, 0,
+      int l[MAXPIECESIZE][MAXPIECESIZE] = {1, 1, 1, 0,
+                                           1, 0, 0, 0,
                                            0, 0, 0, 0,
                                            0, 0, 0, 0
                                           };
@@ -98,6 +101,7 @@ void loop()
                                            0, 0, 0, 0,
                                            0, 0, 0, 0
                                           };
+
       tft.begin();
       tft.setRotation(0);
       tft.setTextSize(1);
@@ -113,17 +117,53 @@ void loop()
       tft.println("LINES :");
       tft.setCursor(190, 185);
       tft.println("NEXT  :");
+
+      //Coordonnées du milieu pour le spawn des objets
+      int baseCoordinates[COORDINATES] = {81,14};
       
       for (int h = 0; h <= MAXPIECESIZE; h++)
       {
         for (int g = 0; g <= MAXPIECESIZE; g++)
         {
-          if (s[h][g] == 1)
+          if (t[h][g] == 1)
           {
-            tft.fillRect(10,10,18,18,ILI9340_BLUE);
+            tft.fillRect(baseCoordinates[0], baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
+            t[h][g] = 2;
+          }
+          else if (t[h-1][g] != NULL && t[h-1][g] == 2)
+          {
+            tft.fillRect(baseCoordinates[0]-18, baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
+            t[h-1][g] = 2;
+          }
+          else if (t[h+1][g] != NULL && t[h+1][g] == 2)
+          {
+            tft.fillRect(baseCoordinates[0]+18, baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
+            t[h+1][g] = 2;
+          }
+          else if (t[h][g+1] != NULL && t[h][g+1] == 2)
+          {
+            tft.fillRect(baseCoordinates[0], baseCoordinates[1]+18, SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
+            t[h][g+1] = 2;
+          }
+          else if (t[h][g-1] != NULL && t[h][g-1] == 2)
+          {
+            tft.fillRect(baseCoordinates[0], baseCoordinates[1]-18, SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
+            t[h][g-1] = 2;
           }
         }
       }
+
+      tft.fillRect(0, 120, SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
+      tft.fillRect(18, 120, SQUARESIZE, SQUARESIZE, ILI9340_WHITE);
+      tft.fillRect(36, 120, SQUARESIZE, SQUARESIZE, ILI9340_YELLOW);
+      tft.fillRect(54, 120, SQUARESIZE, SQUARESIZE, ILI9340_BLACK);
+      tft.fillRect(72, 120, SQUARESIZE, SQUARESIZE, ILI9340_MAGENTA);
+      tft.fillRect(90, 120, SQUARESIZE, SQUARESIZE, ILI9340_CYAN);
+      tft.fillRect(108, 120, SQUARESIZE, SQUARESIZE, ILI9340_RED);
+      tft.fillRect(126, 120, SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
+      tft.fillRect(144, 120, SQUARESIZE, SQUARESIZE, ILI9340_WHITE);
+      tft.fillRect(162, 120, SQUARESIZE, SQUARESIZE, ILI9340_YELLOW);
+      
     }
     else
     {
