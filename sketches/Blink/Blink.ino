@@ -13,9 +13,17 @@
 // the setup function runs once when you press reset or power the board
 void setup() {
   // initialize digital pin LED_BUILTIN as an output.
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(2, OUTPUT);
+  Serial.begin(9600);
+  attachInterrupt(digitalPinToInterrupt(3), light_ISR, FALLING);
 }
 // the loop function runs over and over again forever
 void loop() {
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+ 
 }
+
+void light_ISR()
+{
+  digitalWrite(2, HIGH);   // turn the LED on (HIGH is the voltage level)
+}
+

@@ -14,20 +14,27 @@ Adafruit_ILI9340 tft = Adafruit_ILI9340(CS, DC, RESET);
 const int PINSWITCH = 44;
 const int MAXHEIGHT = 17;
 const int MAXWIDTH = 10;
-const int MAXPIECESIZE = 4;
 const int SQUARESIZE = 18;
 const int COORDINATES = 2;
-int tglState, lastTglState, gameTable[MAXHEIGHT][MAXWIDTH];
+int tglState, lastTglState, gameTable[MAXHEIGHT][MAXWIDTH], score, level, lines, anaNumber, randomPiece;
+volatile int interruptPin = 2;
 
 void setup()
 {
   Serial.begin(9600);
   Serial.println("Start...");
 
+  anaNumber = analogRead(0);
   lastTglState = 1;
+  score = 0;
+  level = 1;
+  lines = 0;
 
   //pinMode(buttonsPin, INPUT_PULLUP);
   pinMode(PINSWITCH, INPUT);
+  randomSeed(anaNumber);
+  attachInterrupt(digitalPinToInterrupt(interruptPin), startGame_ISR, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(interruptPin), pauseGame_ISR, CHANGE);
 
   tft.begin();
   tft.setRotation(0);
@@ -66,104 +73,71 @@ void loop()
         }
       }
 
-      int i[MAXPIECESIZE][MAXPIECESIZE] = {1, 0, 0, 0,
-                                           1, 0, 0, 0,
-                                           1, 0, 0, 0,
-                                           1, 0, 0, 0
-                                          };
-      int t[MAXPIECESIZE][MAXPIECESIZE] = {1, 1, 1, 0,
-                                           0, 1, 0, 0,
-                                           0, 0, 0, 0,
-                                           0, 0, 0, 0
-                                          };
-      int o[MAXPIECESIZE][MAXPIECESIZE] = {1, 1, 0, 0,
-                                           1, 1, 0, 0,
-                                           0, 0, 0, 0,
-                                           0, 0, 0, 0
-                                          };
-      int j[MAXPIECESIZE][MAXPIECESIZE] = {1, 1, 0, 0,
-                                           1, 0, 0, 0,
-                                           1, 0, 0, 0,
-                                           0, 0, 0, 0
-                                          };
-      int l[MAXPIECESIZE][MAXPIECESIZE] = {1, 1, 1, 0,
-                                           1, 0, 0, 0,
-                                           0, 0, 0, 0,
-                                           0, 0, 0, 0
-                                          };
-      int z[MAXPIECESIZE][MAXPIECESIZE] = {1, 1, 0, 0,
-                                           0, 1, 1, 0,
-                                           0, 0, 0, 0,
-                                           0, 0, 0, 0
-                                          };
-      int s[MAXPIECESIZE][MAXPIECESIZE] = {0, 1, 1, 0,
-                                           1, 1, 0, 0,
-                                           0, 0, 0, 0,
-                                           0, 0, 0, 0
-                                          };
+      //Coordonnées du "milieu" pour le spawn des objets
+      int baseCoordinates[COORDINATES] = {72, 14};
 
-      tft.begin();
-      tft.setRotation(0);
-      tft.setTextSize(1);
-      tft.setTextColor(ILI9340_BLACK);
-      tft.fillScreen(ILI9340_GREEN);
-      tft.drawFastVLine(185, 0, 320, ILI9340_BLACK);
-      tft.drawFastVLine(180, 0, 320, ILI9340_BLACK);
-      tft.setCursor(190, 5);
-      tft.println("SCORE :");
-      tft.setCursor(190, 65);
-      tft.println("LEVEL :");
-      tft.setCursor(190, 125);
-      tft.println("LINES :");
-      tft.setCursor(190, 185);
-      tft.println("NEXT  :");
+      gameSetup();
 
-      //Coordonnées du milieu pour le spawn des objets
-      int baseCoordinates[COORDINATES] = {81,14};
-      
-      for (int h = 0; h <= MAXPIECESIZE; h++)
+      randomPiece = random(1, 8);
+
+      switch (randomPiece)
       {
-        for (int g = 0; g <= MAXPIECESIZE; g++)
-        {
-          if (t[h][g] == 1)
-          {
-            tft.fillRect(baseCoordinates[0], baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
-            t[h][g] = 2;
-          }
-          else if (t[h-1][g] != NULL && t[h-1][g] == 2)
-          {
-            tft.fillRect(baseCoordinates[0]-18, baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
-            t[h-1][g] = 2;
-          }
-          else if (t[h+1][g] != NULL && t[h+1][g] == 2)
-          {
-            tft.fillRect(baseCoordinates[0]+18, baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
-            t[h+1][g] = 2;
-          }
-          else if (t[h][g+1] != NULL && t[h][g+1] == 2)
-          {
-            tft.fillRect(baseCoordinates[0], baseCoordinates[1]+18, SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
-            t[h][g+1] = 2;
-          }
-          else if (t[h][g-1] != NULL && t[h][g-1] == 2)
-          {
-            tft.fillRect(baseCoordinates[0], baseCoordinates[1]-18, SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
-            t[h][g-1] = 2;
-          }
-        }
+        case 1:
+          tft.fillRect(baseCoordinates[0], baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_MAGENTA);
+          tft.fillRect(baseCoordinates[0], baseCoordinates[1] + 18, SQUARESIZE, SQUARESIZE, ILI9340_MAGENTA);
+          tft.fillRect(baseCoordinates[0], baseCoordinates[1] + 18 * 2, SQUARESIZE, SQUARESIZE, ILI9340_MAGENTA);
+          tft.fillRect(baseCoordinates[0], baseCoordinates[1] + 18 * 3, SQUARESIZE, SQUARESIZE, ILI9340_MAGENTA);
+          break;
+        case 2:
+          tft.fillRect(baseCoordinates[0], baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_CYAN);
+          tft.fillRect(baseCoordinates[0], baseCoordinates[1] + 18, SQUARESIZE, SQUARESIZE, ILI9340_CYAN);
+          tft.fillRect(baseCoordinates[0] + 18, baseCoordinates[1] + 18, SQUARESIZE, SQUARESIZE, ILI9340_CYAN);
+          tft.fillRect(baseCoordinates[0] + 18, baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_CYAN);
+          break;
+        case 3:
+          tft.fillRect(baseCoordinates[0], baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_RED);
+          tft.fillRect(baseCoordinates[0] + 18, baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_RED);
+          tft.fillRect(baseCoordinates[0] + 18 * 2, baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_RED);
+          tft.fillRect(baseCoordinates[0] + 18, baseCoordinates[1] + 18, SQUARESIZE, SQUARESIZE, ILI9340_RED);
+          break;
+        case 4:
+          tft.fillRect(baseCoordinates[0] + 18, baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
+          tft.fillRect(baseCoordinates[0], baseCoordinates[1] + 18, SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
+          tft.fillRect(baseCoordinates[0] - 18, baseCoordinates[1] + 18, SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
+          tft.fillRect(baseCoordinates[0] + 18, baseCoordinates[1] + 18, SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
+          break;
+        case 5:
+          tft.fillRect(baseCoordinates[0] - 18, baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_YELLOW);
+          tft.fillRect(baseCoordinates[0], baseCoordinates[1] + 18, SQUARESIZE, SQUARESIZE, ILI9340_YELLOW);
+          tft.fillRect(baseCoordinates[0] - 18, baseCoordinates[1] + 18, SQUARESIZE, SQUARESIZE, ILI9340_YELLOW);
+          tft.fillRect(baseCoordinates[0] + 18, baseCoordinates[1] + 18, SQUARESIZE, SQUARESIZE, ILI9340_YELLOW);
+          break;
+        case 6:
+          tft.fillRect(baseCoordinates[0], baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_WHITE);
+          tft.fillRect(baseCoordinates[0] - 18, baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_WHITE);
+          tft.fillRect(baseCoordinates[0], baseCoordinates[1] + 18, SQUARESIZE, SQUARESIZE, ILI9340_WHITE);
+          tft.fillRect(baseCoordinates[0] + 18, baseCoordinates[1] + 18, SQUARESIZE, SQUARESIZE, ILI9340_WHITE);
+          break;
+        case 7:
+          tft.fillRect(baseCoordinates[0], baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_BLACK);
+          tft.fillRect(baseCoordinates[0] + 18, baseCoordinates[1], SQUARESIZE, SQUARESIZE, ILI9340_BLACK);
+          tft.fillRect(baseCoordinates[0], baseCoordinates[1] + 18, SQUARESIZE, SQUARESIZE, ILI9340_BLACK);
+          tft.fillRect(baseCoordinates[0] - 18, baseCoordinates[1] + 18, SQUARESIZE, SQUARESIZE, ILI9340_BLACK);
+          break;
       }
 
-      tft.fillRect(0, 120, SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
-      tft.fillRect(18, 120, SQUARESIZE, SQUARESIZE, ILI9340_WHITE);
-      tft.fillRect(36, 120, SQUARESIZE, SQUARESIZE, ILI9340_YELLOW);
-      tft.fillRect(54, 120, SQUARESIZE, SQUARESIZE, ILI9340_BLACK);
-      tft.fillRect(72, 120, SQUARESIZE, SQUARESIZE, ILI9340_MAGENTA);
-      tft.fillRect(90, 120, SQUARESIZE, SQUARESIZE, ILI9340_CYAN);
-      tft.fillRect(108, 120, SQUARESIZE, SQUARESIZE, ILI9340_RED);
-      tft.fillRect(126, 120, SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
-      tft.fillRect(144, 120, SQUARESIZE, SQUARESIZE, ILI9340_WHITE);
-      tft.fillRect(162, 120, SQUARESIZE, SQUARESIZE, ILI9340_YELLOW);
-      
+      //TEST
+      tft.fillRect(0, 220, SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
+      tft.fillRect(18, 220, SQUARESIZE, SQUARESIZE, ILI9340_WHITE);
+      tft.fillRect(36, 220, SQUARESIZE, SQUARESIZE, ILI9340_YELLOW);
+      tft.fillRect(54, 220, SQUARESIZE, SQUARESIZE, ILI9340_BLACK);
+      tft.fillRect(72, 220, SQUARESIZE, SQUARESIZE, ILI9340_MAGENTA);
+      tft.fillRect(90, 220, SQUARESIZE, SQUARESIZE, ILI9340_CYAN);
+      tft.fillRect(108, 220, SQUARESIZE, SQUARESIZE, ILI9340_RED);
+      tft.fillRect(126, 220, SQUARESIZE, SQUARESIZE, ILI9340_BLUE);
+      tft.fillRect(144, 220, SQUARESIZE, SQUARESIZE, ILI9340_WHITE);
+      tft.fillRect(162, 220, SQUARESIZE, SQUARESIZE, ILI9340_YELLOW);
+
     }
     else
     {
@@ -174,5 +148,43 @@ void loop()
     }
   }
   lastTglState = tglState;
+}
+
+void gameSetup()
+{
+  tft.begin();
+  tft.setRotation(0);
+  tft.setTextSize(1);
+  tft.setTextColor(ILI9340_BLACK);
+  tft.fillScreen(ILI9340_GREEN);
+  tft.drawFastVLine(185, 0, 320, ILI9340_BLACK);
+  tft.drawFastVLine(180, 0, 320, ILI9340_BLACK);
+  tft.setCursor(190, 5);
+  tft.println("SCORE :");
+  tft.setCursor(190, 25);
+  tft.println(score);
+  tft.setCursor(190, 65);
+  tft.println("LEVEL :");
+  tft.setCursor(190, 85);
+  tft.println(level);
+  tft.setCursor(190, 125);
+  tft.println("LINES :");
+  //tft.setCursor(190, 145);
+  //tft.println(lines);
+  tft.setCursor(190, 185);
+  tft.println("NEXT  :");
+}
+
+void pauseGame_ISR()
+{
+  tft.begin();
+  tft.fillScreen(ILI9340_WHITE);
+  tft.setCursor(105, 140);
+  tft.println("PAUSE");
+}
+
+void startGame_ISR()
+{
+  
 }
 
